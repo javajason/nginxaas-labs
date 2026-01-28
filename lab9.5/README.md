@@ -231,9 +231,9 @@ Now, test out the newly-deployed default WAF policy.
      * /cart?search=aaa'><script>prompt('Please+enter+your+password');</script>
 ```
 
-.. note::
-   *The web application firewall is blocking these requests to protect the application. The block page can*
-   *be customized to provide additional information.*
+> note::
+>   *The web application firewall is blocking these requests to protect the application. The block page can*
+>   *be customized to provide additional information.*
 
    ## Expected Results
 
