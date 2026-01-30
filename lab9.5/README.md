@@ -104,10 +104,17 @@ See the following tables for a list of additional options that can be use to fur
 
 Create the Nginx for Azure configuration needed for the new WAF-protected version of juiceshop.example.com.
 
-First, using the Nginx for Azure Console, modify /etc/nginx/conf.d/juiceshop.example.com.conf by adding the WAF section (REVIEW THIS).
-You can use the example file provided, and just Copy/Paste.
+Using the Nginx for Azure Console, enable WAF by adding the following lines to /etc/nginx/conf.d/juiceshop.example.com.conf:
+- "load_module modules/ngx_http_app_protect_module.so;" in the main context.
+- "app_protect_enforcer_address 127.0.0.1:50000;" in the http context. (THIS CONTEXT WILL NEED TO BE ADDED FOR THIS LAB SECTION.)
+- The following lines in the location context:
+   - app_protect_enable on;
+   - app_protect_policy_file "/etc/app_protect/conf/NginxDefaultPolicy.json";
+   - app_protect_security_log_enable on;
+   - app_protect_security_log "/etc/app_protect/conf/log_all.json" syslog:server=127.0.0.1:5140;
 
-In the following example, the NGINX configuration file with F5 WAF for NGINX is enabled in the HTTP context and the policy /etc/app_protect/conf/NginxDefaultPolicy.json is used:
+
+The juiceshop.example.com.conf file should now look like this:
 
     # Nginx 4 Azure - Juiceshop Nginx HTTP
     # WAF for Juiceshop
