@@ -111,11 +111,8 @@ In the following example, the NGINX configuration file with F5 WAF for NGINX is 
 
     # Nginx 4 Azure - Juiceshop Nginx HTTP
     # WAF for Juiceshop
-    #
-    ### From previous lab. Remove?
-    ### proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=image_cache:10m max_size=100m use_temp_path=off;
-    #
 
+    # ADD THIS LINE TO LOAD WAF MODULE
     load_module modules/ngx_http_app_protect_module.so;
 
     server {
