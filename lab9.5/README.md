@@ -5,11 +5,13 @@ In this lab, you will configure WAF functionality in NGINXaaS and run some commo
 ## Pre-Requisites
 
 - You must have your Nginx for Azure instance running
+- Your Nginx for Azure instance must be running with the "plan:standardv3" SKU
+- You must have selected "Enable F5 WAF for NGINX" when creating the Nginx for Azure instance
 - You must have your AKS1 Cluster running
 - See `Lab0` for instructions on setting up your system for this Workshop
 - Familiarity with basic Linux commands and commandline tools
 - Familiarity with basic HTTP protocol
-- JuiceShop deployed in AKS cluster and exposed with Nginx Ingress Controller.
+- JuiceShop deployed in AKS cluster and exposed with Nginx Ingress Controller
 
 The following steps will guide you through adding a Web Application Firewall (WAF) Policy.
 These steps will apply a preconfigured WAF policy to the load balancer created previously.
@@ -102,18 +104,9 @@ See the following tables for a list of additional options that can be use to fur
 
 Create the Nginx for Azure configuration needed for the new WAF-protected version of juiceshop.example.com.
 
-First, using the Nginx for Azure Console, create a default WAF policy.
+First, using the Nginx for Azure Console, modify /etc/nginx/conf.d/juiceshop.example.com.conf by adding the WAF section (REVIEW THIS).
+You can use the example file provided, and just Copy/Paste.
 
-```json
-{
-    "policy" : {
-        "name": "app_protect_default_policy",
-        "template": { "name": "POLICY_TEMPLATE_NGINX_BASE" }
-    }
-}
-```
-
-Next, modify /etc/nginx/conf.d/juiceshop.example.com.conf by adding the WAF section (REVIEW THIS). You can use the example file provided, just Copy/Paste.
 In the following example, the NGINX configuration file with F5 WAF for NGINX is enabled in the HTTP context and the policy /etc/app_protect/conf/NginxDefaultPolicy.json is used:
 
     # Nginx 4 Azure - Juiceshop Nginx HTTP
@@ -123,17 +116,7 @@ In the following example, the NGINX configuration file with F5 WAF for NGINX is 
     ### proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=image_cache:10m max_size=100m use_temp_path=off;
     #
 
-    # NEW WAF SECTION. INCLUDE THIS TO ENABLE THE WAF.
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-    sendfile        on;
-    keepalive_timeout  65;
-
-    app_protect_enable on; # This is how you enable F5 WAF for NGINX in the relevant context/block
-    app_protect_policy_file "/etc/app_protect/conf/NginxDefaultPolicy.json"; # This refers to which policy file to use, which falls back to the default policy
-    app_protect_security_log_enable on; # This section enables logging
-    app_protect_security_log "/etc/app_protect/conf/log_default.json" syslog:server=127.0.0.1:514; # This is where the remote logger is defined in terms of: logging options (defined in the referenced file), log server IP, log server port
-    # END OF NEW WAF SECTION.
+    load_module modules/ngx_http_app_protect_module.so;
 
     server {
         
@@ -143,8 +126,12 @@ In the following example, the NGINX configuration file with F5 WAF for NGINX is 
         status_zone juiceshop;
 
         # access_log  /var/log/nginx/juiceshop.log main;
-        access_log  /var/log/nginx/juiceshop.example.com.log main_ext;   # Extended Logging
+        access_log  /var/log/nginx/juiceshop.example.com.log main_ext;
         error_log   /var/log/nginx/juiceshop.example.com_error.log info;
+
+        # ADD THE ENFORCER ADDRESS BEFORE THE LOCATION BLOCK
+        # (NEED TO CREATE AN HTTP CONTEXT AND MOVE THIS THERE)
+        app_protect_enforcer_address 127.0.0.1:50000;
 
         location / {
             
@@ -156,14 +143,13 @@ In the following example, the NGINX configuration file with F5 WAF for NGINX is 
             # limit_req_dry_run on;           # Test the Rate limit, logged, but not enforced
             # add_header X-Ratelimit-Status $limit_req_status;   # Add a custom status header
 
-            ## ALTERNATE WAF CONFIGURATION
-                    # F5 WAF for NGINX
+            ## NGINX WAF CONFIGURATION
             app_protect_enable on;
-            app_protect_policy_file app_protect_default_policy;
+            app_protect_policy_file "/etc/app_protect/conf/NginxDefaultPolicy.json";
             app_protect_security_log_enable on;
-            app_protect_security_log log_all stderr;
-
-            ## END OF ALTERNATE WAF CONFIGURATION
+            # app_protect_security_log log_all stderr;
+            app_protect_security_log "/etc/app_protect/conf/log_all.json" syslog:server=127.0.0.1:5140;
+            ## NGINX WAF CONFIGURATION
 
             proxy_pass http://aks1_ingress;       # Proxy to AKS1 Nginx Ingress Controllers
             add_header X-Proxy-Pass aks1_ingress_juiceshop;  # Custom Header
