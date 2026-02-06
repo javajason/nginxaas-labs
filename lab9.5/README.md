@@ -122,6 +122,9 @@ The juiceshop.example.com.conf file should now look like this:
     # ADD THIS LINE TO LOAD WAF MODULE
     load_module modules/ngx_http_app_protect_module.so;
 
+    # ADD THE ENFORCER ADDRESS BEFORE THE LOCATION BLOCK
+    app_protect_enforcer_address 127.0.0.1:50000;
+
     server {
         
         listen 80;      # Listening on port 80 on all IP addresses on this machine
@@ -134,7 +137,7 @@ The juiceshop.example.com.conf file should now look like this:
         error_log   /var/log/nginx/juiceshop.example.com_error.log info;
 
         # ADD THE ENFORCER ADDRESS BEFORE THE LOCATION BLOCK
-        # (NEED TO CREATE AN HTTP CONTEXT AND MOVE THIS THERE)
+        ## DOES THIS NEED TO BE PLACED IN THE HTTP CONTEXT?
         app_protect_enforcer_address 127.0.0.1:50000;
 
         location / {
@@ -147,13 +150,13 @@ The juiceshop.example.com.conf file should now look like this:
             # limit_req_dry_run on;           # Test the Rate limit, logged, but not enforced
             # add_header X-Ratelimit-Status $limit_req_status;   # Add a custom status header
 
-            ## NGINX WAF CONFIGURATION
+            # NGINX WAF CONFIGURATION
+            ## CAN THIS BE MOVED OUTSIDE OF THE LOCATION BLOCK SO IT APPLIES TO ALL PATHS?
             app_protect_enable on;
             app_protect_policy_file "/etc/app_protect/conf/NginxDefaultPolicy.json";
             app_protect_security_log_enable on;
-            # app_protect_security_log log_all stderr;
             app_protect_security_log "/etc/app_protect/conf/log_all.json" syslog:server=127.0.0.1:5140;
-            ## NGINX WAF CONFIGURATION
+            # END OF NGINX WAF CONFIGURATION
 
             proxy_pass http://aks1_ingress;       # Proxy to AKS1 Nginx Ingress Controllers
             add_header X-Proxy-Pass aks1_ingress_juiceshop;  # Custom Header
